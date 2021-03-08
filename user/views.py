@@ -1,4 +1,5 @@
 from django.shortcuts import render
+
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from utils.util import success_response, error_response, unauth
 import requests
@@ -6,7 +7,7 @@ import json
 # Create your views here.
 
 def index(request):
-    return HttpResponse(123)
+    return render(request, 'index.html')
 
 def login(request):
     code = request.GET.get('code', '')
