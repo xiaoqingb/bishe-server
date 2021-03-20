@@ -19,7 +19,7 @@ from django.urls import include, path
 
 
 urlpatterns = [
-    path('polls/', include('polls.urls')),
-    path('user/', include('user.urls')),
     path('', include('user.urls')),
+    path('user/', include('user.urls')),
+    path('lostAndFound/', include('lostAndFound.urls')),
 ]
