@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include('user.urls')),
     path('user/', include('user.urls')),
     path('lostAndFound/', include('lostAndFound.urls')),
+    path('favorite/', include('userFavorite.urls')),
 ]
