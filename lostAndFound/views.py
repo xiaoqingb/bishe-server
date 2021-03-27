@@ -28,7 +28,6 @@ def submitLost(request):
         lost_item.tell = data_json.get('tell')
         lost_item.remark_info = data_json.get('content')
         lost_item.image_url = data_json.get('imageUrl')
-        lost_item.user_id = data_json.get('userId')
         lost_item.save()
     else:
         type_ = item_type[data_json.get('type')]
@@ -61,9 +60,8 @@ def list(request):
         '0': 'lost',
         '1': 'found'
     }
-    arr = []
     type = item_type[request.GET.get('type', default='lost')]
-    arr = lostAndFound.objects.all().filter(type=type, publish_status = 1)
+    arr = lostAndFound.objects.all().filter(type=type, status = 1)
     for item in arr:
         user = User.objects.get(openid=item.user_id)
         format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
@@ -80,7 +78,9 @@ def list(request):
             'avator': user.avatar_url,
             'checkTimes': item.check_times,
             'publisher': user.user_name,
-            'type': item_type_reverse[item.type]
+            'type': item_type_reverse[item.type],
+            'status': item.status,
+            'reason': item.reason,
         })
 
     return success_response('成功', res);
@@ -96,12 +96,12 @@ def userList(request):
     type = request.GET.get('publishStatus', default='published')
     if type == 'published':
         arr = lostAndFound.objects.all().filter(
-            publish_status = 1,
+            status = 1,
             user_id=request.GET.get('userId')
         )
     if type == 'unpublish':
         arr = lostAndFound.objects.all().filter(
-            publish_status = 0,
+            status = 0,
             user_id=request.GET.get('userId')
         )
     # 拿到收藏的列表
@@ -132,9 +132,10 @@ def userList(request):
             'avator': user.avatar_url,
             'publisher': user.user_name,
             'checkTimes': item.check_times,
-            'type': item_type_reverse[item.type]
+            'type': item_type_reverse[item.type],
+            'status': item.status,
+            'reason': item.reason,
         })
-
     return success_response('成功', res);
 
 # 详情
@@ -173,8 +174,102 @@ def detail(request):
             'checkTimes': item.check_times,
             'type': item_type_reverse[item.type],
             'favorite': favorite_status,
+            'status': item.status,
+            'reason': item.reason,
         })
         item.check_times +=1
         item.save()
     return success_response('成功', res);
     # return success_response('成功', list(lostAndFound.objects.all().values()));
+
+# 详情
+def delete(request):
+    res = []
+    id = request.GET.get('id')
+    for item in lostAndFound.objects.all().filter(id=int(id)):
+        user = User.objects.get(openid=item.user_id)
+        item.delete()
+    return success_response('成功', res);
+
+
+def approve(request):
+    data_json = json.loads(request.body)
+    favorite_item = lostAndFound.objects.get(
+        recruit_id=data_json.get('id'),
+    )
+    favorite_item.status = 1,
+    favorite_item.save()
+    return success_response('审核成功')
+
+def reject(request):
+    data_json = json.loads(request.body)
+    favorite_item = lostAndFound.objects.get(
+        recruit_id=data_json.get('id'),
+    )
+    favorite_item.status = 2,
+    favorite_item.company = data_json.get('reason'),
+    favorite_item.save()
+    return success_response('驳回成功')
+
+
+# 管理员编辑
+def adminEdit(request):
+    data_json = json.loads(request.body)
+    item_type = {
+        'lost': 0,
+        'found': 1
+    }
+    # 有id 就是要修改这个item信息
+    if data_json.get('id'):
+        # print(data_json)
+        type_ = item_type[data_json.get('type')]
+        lost_item = lostAndFound.objects.get(id=data_json.get('id'))
+        lost_item.time = data_json.get('time')
+        lost_item.place = data_json.get('place')
+        lost_item.name = data_json.get('title')
+        lost_item.lost_type = data_json.get('lostType')
+        lost_item.wechat = data_json.get('wechat')
+        lost_item.tell = data_json.get('tell')
+        lost_item.remark_info = data_json.get('content')
+        lost_item.image_url = data_json.get('imageUrl')
+        lost_item.publisher = data_json.get('publisher')
+        lost_item.type = type_
+        lost_item.status = data_json.get('status')
+        lost_item.reason = data_json.get('reason')
+        lost_item.save()
+
+    return success_response('编辑成功');
+
+
+# 列表
+def adminList(request):
+    # data_json = json.loads(request.body)
+    # print(data_json)
+    res = []
+    item_type_reverse = {
+        '0': 'lost',
+        '1': 'found'
+    }
+    arr = lostAndFound.objects.all()
+    for item in arr:
+        user = User.objects.get(openid=item.user_id)
+        format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
+        res.append({
+            'id': item.id,
+            'time': format_time,
+            'place': item.place,
+            'title': item.name,
+            'imgPath': item.image_url,
+            'wechat': item.wechat,
+            'content': item.remark_info,
+            'tell': item.tell,
+            'publishDate': item.publish_date,
+            'avator': user.avatar_url,
+            'checkTimes': item.check_times,
+            'publisher': user.user_name,
+            'type': item_type_reverse[item.type],
+            'status': item.status,
+            'reason': item.reason,
+        })
+
+    return success_response('成功', res);

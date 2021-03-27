@@ -23,4 +23,7 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('lostAndFound/', include('lostAndFound.urls')),
     path('favorite/', include('userFavorite.urls')),
+    path('admin/recruitInfo/', include('recruitInfo.urls')),
+    path('recruitInfo/', include('recruitInfo.urls')),
+    path('schoolActivity/', include('schoolActivity.urls')),
 ]
