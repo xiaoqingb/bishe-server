@@ -6,4 +6,9 @@ urlpatterns = [
     # ex: /user/
     path('', views.index, name='index'),
     path('login/', views.login, name='login'),
+    path('userList', views.userList, name='userList'),
+    path('importUser', views.importUser, name='importUser'),
+    path('delete', views.delete, name='delete'),
+    path('edit', views.edit, name='edit'),
+    path('loginByCard', views.loginByCard, name='loginByCard'),
 ]

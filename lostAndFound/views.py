@@ -9,6 +9,14 @@ from utils.util import success_response, error_response, unauth
 import json
 from user.models import User, lostAndFound, UserFavorite
 
+
+def is_valid_date(str):
+  try:
+    time.strptime(str, "%Y-%m-%d")
+    return True
+  except:
+    return False
+
 # 提交失物招领
 def submitLost(request):
     data_json = json.loads(request.body)
@@ -64,7 +72,9 @@ def list(request):
     arr = lostAndFound.objects.all().filter(type=type, status = 1)
     for item in arr:
         user = User.objects.get(openid=item.user_id)
-        format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
+        format_time = item.time
+        if not (is_valid_date(item.time)):
+            format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
         res.append({
             'id': item.id,
             'time': format_time,
@@ -75,6 +85,7 @@ def list(request):
             'content': item.remark_info,
             'tell': item.tell,
             'publishDate': item.publish_date,
+            'lostType': item.lost_type,
             'avator': user.avatar_url,
             'checkTimes': item.check_times,
             'publisher': user.user_name,
@@ -118,7 +129,9 @@ def userList(request):
             if item: arr.append(item[0])
     for item in arr:
         user = User.objects.get(openid=item.user_id)
-        format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
+        format_time = item.time
+        if not (is_valid_date(item.time)):
+            format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
         res.append({
             'id': item.id,
             'time': format_time,
@@ -148,15 +161,17 @@ def detail(request):
     id = request.GET.get('id')
     for item in lostAndFound.objects.all().filter(id=int(id)):
         user = User.objects.get(openid=item.user_id)
-        format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
-        favoriteItem = UserFavorite.objects.all().filter(
+        format_time = item.time
+        if not (is_valid_date(item.time)):
+            format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
+        favorite_item = UserFavorite.objects.all().filter(
             user_id=request.GET.get('userId'),
             content_type=0,
             content_id=request.GET.get('id'),
         )
         favorite_status = 0
         # 如果存在，就可以收藏
-        if favoriteItem: favorite_status = 1
+        if favorite_item: favorite_status = 1
         res.append({
             'id': item.id,
             'time': format_time,
@@ -185,9 +200,8 @@ def detail(request):
 # 详情
 def delete(request):
     res = []
-    id = request.GET.get('id')
-    for item in lostAndFound.objects.all().filter(id=int(id)):
-        user = User.objects.get(openid=item.user_id)
+    data_json = json.loads(request.body)
+    for item in lostAndFound.objects.all().filter(id=data_json.get('id')):
         item.delete()
     return success_response('成功', res);
 
@@ -195,19 +209,19 @@ def delete(request):
 def approve(request):
     data_json = json.loads(request.body)
     favorite_item = lostAndFound.objects.get(
-        recruit_id=data_json.get('id'),
+        id=data_json.get('id'),
     )
-    favorite_item.status = 1,
+    favorite_item.status = 1
     favorite_item.save()
     return success_response('审核成功')
 
 def reject(request):
     data_json = json.loads(request.body)
     favorite_item = lostAndFound.objects.get(
-        recruit_id=data_json.get('id'),
+        id=data_json.get('id'),
     )
-    favorite_item.status = 2,
-    favorite_item.company = data_json.get('reason'),
+    favorite_item.status = 2
+    favorite_item.reason = data_json.get('reason')
     favorite_item.save()
     return success_response('驳回成功')
 
@@ -225,13 +239,15 @@ def adminEdit(request):
         type_ = item_type[data_json.get('type')]
         lost_item = lostAndFound.objects.get(id=data_json.get('id'))
         lost_item.time = data_json.get('time')
+        lost_item.check_times = data_json.get('checkTimes')
+        lost_item.publish_date = data_json.get('publishDate')
         lost_item.place = data_json.get('place')
         lost_item.name = data_json.get('title')
         lost_item.lost_type = data_json.get('lostType')
         lost_item.wechat = data_json.get('wechat')
         lost_item.tell = data_json.get('tell')
         lost_item.remark_info = data_json.get('content')
-        lost_item.image_url = data_json.get('imageUrl')
+        lost_item.image_url = data_json.get('imgPath')
         lost_item.publisher = data_json.get('publisher')
         lost_item.type = type_
         lost_item.status = data_json.get('status')
@@ -253,7 +269,9 @@ def adminList(request):
     arr = lostAndFound.objects.all()
     for item in arr:
         user = User.objects.get(openid=item.user_id)
-        format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
+        format_time = item.time
+        if not (is_valid_date(item.time)):
+            format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
         res.append({
             'id': item.id,
             'time': format_time,
@@ -265,6 +283,7 @@ def adminList(request):
             'tell': item.tell,
             'publishDate': item.publish_date,
             'avator': user.avatar_url,
+            'lostType': item.lost_type,
             'checkTimes': item.check_times,
             'publisher': user.user_name,
             'type': item_type_reverse[item.type],
@@ -272,4 +291,5 @@ def adminList(request):
             'reason': item.reason,
         })
 
-    return success_response('成功', res);
+    return success_response('成功', res)
+

@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 
 class User(models.Model):
-    # id = models.AutoField(max_length=200)
+    id = models.AutoField(primary_key=True)
     openid = models.CharField(max_length=200, default="")
     code = models.CharField(max_length=200, default="")
     user_name = models.CharField(max_length=200, default="")
@@ -11,9 +11,9 @@ class User(models.Model):
     city = models.CharField(max_length=200, default="")
     country = models.CharField(max_length=200, default="")
     province = models.CharField(max_length=200, default="")
-    card_id = models.CharField(max_length=200, default="001")
-    card_password = models.CharField(max_length=200, default="001")
-    user_Identity = models.CharField(max_length=200, default="0")
+    card_id = models.CharField(max_length=200, default="")
+    card_password = models.CharField(max_length=200, default="")
+    user_identity = models.CharField(max_length=200, default="0")
 
     def __str__(self):
         return self.user_name
@@ -121,8 +121,37 @@ class ThumbUp(models.Model):
     id = models.AutoField(primary_key=True) # id
     content_id = models.CharField(max_length=200, default="", null = True)  # 职位id
     user_id = models.CharField(max_length=200, default="", null = True)  # 报名者id
+    content_type = models.CharField(max_length=200, default=0, null = True)  # 内容类型 0 招聘 1 论坛
     def __str__(self):
         return self.id
 
     class Meta:
         db_table = 'thumb_up'
+
+class SchoolForum(models.Model):
+    topic_id = models.AutoField(primary_key=True)
+    topic_tag_list = models.CharField(max_length=200, default="", null = True)
+    publisher = models.CharField(max_length=200, default="", null = True)
+    topic_content = models.CharField(max_length=200, default="", null = True)
+    publish_date = models.CharField(max_length=200, default="", null = True)
+    read_nums = models.CharField(max_length=200, default=0, null = True)
+    # thumb_up_nums = models.CharField(max_length=200, default="", null = True)
+    def __str__(self):
+        return self.topic_id
+
+    class Meta:
+        db_table = 'school_forum'
+
+
+class Comment(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_id = models.CharField(max_length=200, default="", null = True)
+    topic_id = models.CharField(max_length=200, default="", null = True)
+    content = models.CharField(max_length=200, default="", null = True)
+    publish_date = models.CharField(max_length=200, default="", null = True)
+    def __str__(self):
+        return self.id
+
+    class Meta:
+        db_table = 'comment'
+

@@ -26,4 +26,5 @@ urlpatterns = [
     path('admin/recruitInfo/', include('recruitInfo.urls')),
     path('recruitInfo/', include('recruitInfo.urls')),
     path('schoolActivity/', include('schoolActivity.urls')),
+    path('schoolForum/', include('schoolForum.urls')),
 ]

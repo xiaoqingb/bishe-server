@@ -77,7 +77,15 @@ def list(request):
         thumbUpNums = 0
         thumbs_list = ThumbUp.objects.filter(
             content_id=item.recruit_id,
+            content_type=0,
         )
+        isCollect = 0
+        if UserFavorite.objects.filter(
+            content_id=item.recruit_id,
+            user_id=request.GET.get('userId'),
+            content_type=2
+        ):
+            isCollect = 1
         if (thumbs_list):
             thumbUpNums = len(thumbs_list)
         arr.append({
@@ -100,6 +108,7 @@ def list(request):
             'imageUrl': item.image_url,
             'readNums': item.read_nums,
             'status': item.status,
+            'isCollect': isCollect,
         })
     return success_response('获取招聘列表成功', arr);
 
@@ -118,11 +127,13 @@ def detail(request):
     if ThumbUp.objects.filter(
         user_id=request.GET.get('userId'),
         content_id=request.GET.get('id'),
+        content_type=0,
     ):
         isThumbUp = 1
     thumbUpNums = 0
     thumbs_list = ThumbUp.objects.filter(
         content_id=request.GET.get('id'),
+        content_type=0,
     )
     if (thumbs_list):
         thumbUpNums = len(thumbs_list)
@@ -217,15 +228,18 @@ def userFavoriteList(request):
 
 def thumbUp(request):
     data_json = json.loads(request.body)
-    apply_item = ThumbUp.objects.filter(content_id=data_json.get('id'), user_id=data_json.get('userId'))
-    if apply_item:
-        apply_item.delete()
-        return success_response('取消成功');
-    else:
+    if data_json.get('isThumbUp') == 1 or data_json.get('isThumbUp') == '1':
         apply_item = ThumbUp.objects.create(
             content_id=data_json.get('id'),
             user_id=data_json.get('userId'),
         )
-        apply_item.save();
-
-    return success_response('成功');
+        apply_item.save()
+        return success_response('成功')
+    else:
+        apply_item = ThumbUp.objects.filter(
+            content_id=data_json.get('id'),
+            user_id=data_json.get('userId'),
+            content_type=0,
+        )
+        apply_item.delete()
+        return success_response('取消成功')
