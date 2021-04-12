@@ -11,4 +11,7 @@ urlpatterns = [
     path('delete', views.delete, name='delete'),
     path('edit', views.edit, name='edit'),
     path('loginByCard', views.loginByCard, name='loginByCard'),
+    path('favoriteTotal', views.favoriteTotal, name='favoriteTotal'),
+    path('thumbTotal', views.thumbTotal, name='thumbTotal'),
+    path('commentTotal', views.commentTotal, name='commentTotal'),
 ]

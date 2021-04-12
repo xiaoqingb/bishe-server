@@ -12,4 +12,5 @@ urlpatterns = [
     path('reject', views.reject, name='reject'),
     path('adminEdit', views.adminEdit, name='adminEdit'),
     path('adminList', views.adminList, name='adminList'),
+    path('chartsData', views.chartsData, name='chartsData'),
 ]

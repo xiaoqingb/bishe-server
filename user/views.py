@@ -4,7 +4,8 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from utils.util import success_response, error_response, unauth
 import requests
 import json
-from .models import User
+from .models import User, Comment, SchoolForum, ThumbUp, UserFavorite, lostAndFound
+
 
 # Create your views here.
 
@@ -110,7 +111,7 @@ def userList(request):
         arr.append({
             'id':user.id,
             'userId': user.openid,
-            'cardId': user.card_password,
+            'cardId': user.card_id,
             'cardPassword': user.card_password,
             'userName': user.user_name,
             'userIdentity': user.user_identity,
@@ -163,4 +164,46 @@ def edit(request):
         user.save()
         return success_response('修改成功')
     return error_response('用户不存在')
+
+
+def favoriteTotal(request):
+    lsotAndFoundList = lostAndFound.objects.filter(
+        user_id=request.GET.get('id'),
+    )
+    total = 0
+    for item in lsotAndFoundList:
+        favorite_count = UserFavorite.objects.filter(
+            content_id=item.id
+        ).count()
+        total += favorite_count
+
+    return success_response('被收藏的失物招领总数', total)
+
+def thumbTotal(request):
+    lsotAndFoundList = SchoolForum.objects.filter(
+        user_id=request.GET.get('id'),
+    )
+    total = 0
+    for item in lsotAndFoundList:
+        thumb_count = ThumbUp.objects.filter(
+            content_id=item.topic_id,
+            content_type=1
+        ).count()
+        total += thumb_count
+
+    return success_response('被论坛被点赞总数', total)
+
+
+def commentTotal(request):
+    lsotAndFoundList = SchoolForum.objects.filter(
+        user_id=request.GET.get('id'),
+    )
+    total = 0
+    for item in lsotAndFoundList:
+        thumb_count = Comment.objects.filter(
+            topic_id=item.topic_id,
+        ).count()
+        total += thumb_count
+
+    return success_response('被论坛被评论总数', total)
 

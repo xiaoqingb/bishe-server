@@ -12,12 +12,18 @@ from user.models import UserFavorite, Apply, User, SchoolForum, ThumbUp, Comment
 
 def publish(request):
     data_json = json.loads(request.body)
+    user = User.objects.filter(
+        openid=data_json.get('userId')
+    )
+    if not user or not user[0].card_id:
+        return error_response('您未登陆认证，无法使用此功能')
     if data_json.get('id'):
         tropic_item = SchoolForum.objects.get(topic_id=data_json.get('id'))
     else:
         tropic_item = SchoolForum.objects.create()
-    tropic_item.topic_tag_list = data_json.get('topicTagList')
-    tropic_item.publisher = data_json.get('publisher')
+    tropic_item.user_id = data_json.get('userId')
+    tropic_item.topic_title = data_json.get('topicTitle')
+    tropic_item.topic_type = data_json.get('topicType')
     tropic_item.topic_content = data_json.get('topicContent')
     tropic_item.publish_date = data_json.get('publishDate')
     tropic_item.save()
@@ -38,8 +44,9 @@ def edit(request):
     tropic_item = SchoolForum.objects.get(
         topic_id=data_json.get('id')
     )
-    tropic_item.topic_tag_list = data_json.get('topicTagList')
-    tropic_item.publisher = data_json.get('publisher')
+    tropic_item.user_id = data_json.get('userId')
+    tropic_item.topic_title = data_json.get('topicTitle')
+    tropic_item.topic_type = data_json.get('topicType')
     tropic_item.topic_content = data_json.get('topicContent')
     tropic_item.publish_date = data_json.get('publishDate')
     tropic_item.read_nums = data_json.get('readNums')
@@ -58,21 +65,39 @@ def list(request):
         )
         if thumb_list:
             thumb_nums = len(thumb_list)
+        comment_arr = []
+        comment_list = Comment.objects.filter(topic_id=item.topic_id)
+        for comment_item in comment_list:
+            user_item = User.objects.filter(openid=comment_item.user_id)
+            if user_item:
+                user_item = user_item[0]
+                comment_arr.append({
+                    "id": comment_item.id,
+                    "userId": user_item.openid,
+                    "userName": user_item.user_name,
+                    "avatorUrl": user_item.avatar_url,
+                    "content": comment_item.content,
+                    "publishDate": comment_item.publish_date,
+                })
+        user = User.objects.get(openid=item.user_id)
         arr.append({
             'id': item.topic_id,
-            'topicTagList': item.topic_tag_list,
-            'publisher': item.publisher,
+            'userId': user.openid,
+            'userName': user.user_name,
+            'avatorUrl': user.avatar_url,
+            'topicTitle': item.topic_title,
+            'topicType': item.topic_type,
             'topicContent': item.topic_content,
             'publishDate': item.publish_date,
             'readNums': item.read_nums,
             'thumbUpNums': thumb_nums,
+            'commentList': comment_arr,
         })
     return success_response('获取活动列表成功', arr);
 
 
 def detail(request):
     arr = []
-    print(request.GET.get('id'))
     topic_items = SchoolForum.objects.filter(topic_id=request.GET.get('id'))
     isThumb = 0
     if ThumbUp.objects.filter(
@@ -95,7 +120,6 @@ def detail(request):
             user_item = User.objects.filter(openid=comment_item.user_id)
             if user_item:
                 user_item = user_item[0]
-                print(user_item)
                 comment_arr.append({
                     "id": comment_item.id,
                     "userId": user_item.openid,
@@ -104,10 +128,13 @@ def detail(request):
                     "content": comment_item.content,
                     "publishDate": comment_item.publish_date,
                 })
+        user = User.objects.get(openid=item.user_id)
         arr.append({
             'id': item.topic_id,
-            'topicTagList': item.topic_tag_list,
-            'publisher': item.publisher,
+            'userName': user.user_name,
+            "userId": user.openid,
+            'avatorUrl': user.avatar_url,
+            'topicTitle': item.topic_title,
             'topicContent': item.topic_content,
             'publishDate': item.publish_date,
             'readNums': item.read_nums,

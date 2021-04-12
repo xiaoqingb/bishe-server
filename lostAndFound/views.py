@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 
+from django.db.models import Sum, Count
 from django.shortcuts import render
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -26,7 +27,6 @@ def submitLost(request):
     }
     # 有id 就是要修改这个item信息
     if data_json.get('id'):
-        # print(data_json)
         lost_item = lostAndFound.objects.get(id=data_json.get('id'))
         lost_item.time = data_json.get('time')
         lost_item.place = data_json.get('place')
@@ -36,7 +36,10 @@ def submitLost(request):
         lost_item.tell = data_json.get('tell')
         lost_item.remark_info = data_json.get('content')
         lost_item.image_url = data_json.get('imageUrl')
+        if lost_item.status == 1 or lost_item.status == '1':
+            lost_item.status = 0
         lost_item.save()
+        return success_response('编辑成功');
     else:
         type_ = item_type[data_json.get('type')]
         lost_item = lostAndFound.objects.create(
@@ -45,6 +48,7 @@ def submitLost(request):
             name=data_json.get('title'),
             lost_type=data_json.get('lostType'),
             wechat=data_json.get('wechat'),
+            tell=data_json.get('tell'),
             remark_info=data_json.get('content'),
             publish_date=time.strftime('%Y-%m-%d'),
             image_url=data_json.get('imageUrl'),
@@ -93,7 +97,6 @@ def list(request):
             'status': item.status,
             'reason': item.reason,
         })
-
     return success_response('成功', res);
 
 # 用户个人列表
@@ -268,7 +271,10 @@ def adminList(request):
     }
     arr = lostAndFound.objects.all()
     for item in arr:
-        user = User.objects.get(openid=item.user_id)
+        user = User.objects.filter(openid=item.user_id)
+        if not user:
+            user = User.objects.filter(openid='mock')
+            user = user[0]
         format_time = item.time
         if not (is_valid_date(item.time)):
             format_time = time.strftime("%Y-%m-%d", time.localtime(int(item.time) / 1000))
@@ -282,10 +288,10 @@ def adminList(request):
             'content': item.remark_info,
             'tell': item.tell,
             'publishDate': item.publish_date,
-            'avator': user.avatar_url,
+            # 'avator': user.avatar_url,
             'lostType': item.lost_type,
             'checkTimes': item.check_times,
-            'publisher': user.user_name,
+            # 'publisher': user.user_name,
             'type': item_type_reverse[item.type],
             'status': item.status,
             'reason': item.reason,
@@ -293,3 +299,30 @@ def adminList(request):
 
     return success_response('成功', res)
 
+def chartsData(request):
+
+    pie_data = [
+        {'name': '日用品', 'value': lostAndFound.objects.filter(lost_type=0, type=0).count()},
+        {'name': '学习书籍', 'value': lostAndFound.objects.filter(lost_type=1, type=0).count()},
+        {'name': '衣物', 'value': lostAndFound.objects.filter(lost_type=2, type=0).count()},
+        {'name': '电子产品', 'value': lostAndFound.objects.filter(lost_type=3, type=0).count()},
+        {'name': '其他', 'value': lostAndFound.objects.filter(lost_type=4, type=0).count()},
+    ]
+
+    xx = lostAndFound.objects.aggregate(Count('publish_date'))
+    bb = lostAndFound.objects.aggregate(Sum('publish_date'))
+    line_data = lostAndFound.objects.filter().values("publish_date", "type").annotate(count=Count("publish_date"))
+    counts = []
+    for item in line_data:
+        counts.append({
+            'publishDate': item.get('publish_date'),
+            'type': item.get('type'),
+            'count': item.get('count')
+        })
+    print(counts)
+    res = {
+        'pieData': pie_data,
+        'lineData': counts,
+    }
+    # print(titles.sort())
+    return success_response('获取图标参数成功', res)

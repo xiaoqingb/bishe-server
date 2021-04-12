@@ -130,8 +130,10 @@ class ThumbUp(models.Model):
 
 class SchoolForum(models.Model):
     topic_id = models.AutoField(primary_key=True)
-    topic_tag_list = models.CharField(max_length=200, default="", null = True)
-    publisher = models.CharField(max_length=200, default="", null = True)
+    user_id = models.CharField(max_length=200, default="", null = True)
+    # publisher = models.CharField(max_length=200, default="", null = True)
+    topic_title = models.CharField(max_length=200, default="", null = True)
+    topic_type = models.CharField(max_length=200, default="", null = True)
     topic_content = models.CharField(max_length=200, default="", null = True)
     publish_date = models.CharField(max_length=200, default="", null = True)
     read_nums = models.CharField(max_length=200, default=0, null = True)

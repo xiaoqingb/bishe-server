@@ -74,15 +74,16 @@ def list(request):
         applyList = []
         apply_list = Apply.objects.filter(content_id=item.activity_id)
         for apply_item in apply_list:
-            user_item = User.objects.get(openid=apply_item.user_id)
-            applyList.append({
-                "userId": user_item.openid,
-                "cardId": user_item.card_id,
-                "cardPassword": user_item.card_password,
-                "nickName": user_item.user_name,
-                "userAvator": user_item.avatar_url
-            })
-
+            user_item = User.objects.filter(openid=apply_item.user_id)
+            if user_item:
+                user_item = user_item[0]
+                applyList.append({
+                    "userId": user_item.openid,
+                    "cardId": user_item.card_id,
+                    "cardPassword": user_item.card_password,
+                    "nickName": user_item.user_name,
+                    "userAvator": user_item.avatar_url
+                })
         arr.append({
             'id': item.activity_id,
             'activityTitle': item.activity_title,
@@ -92,7 +93,7 @@ def list(request):
             'activityStartDate': item.activity_start_date,
             'activityEndDate': item.activity_end_date,
             'holder': item.holder,
-            'enterNums': item.enter_nums,
+            'enterNums': len(applyList),
             'readNums': item.read_nums,
             'isCollect': item.is_collect,
             'publisher': item.publisher,
@@ -120,7 +121,22 @@ def detail(request):
         content_id=request.GET.get('id'),
     ):
         isApply = 1
+
     for item in recruitList:
+
+        applyList = []
+        apply_list = Apply.objects.filter(content_id=item.activity_id)
+        for apply_item in apply_list:
+            user_item = User.objects.filter(openid=apply_item.user_id)
+            if user_item:
+                user_item = user_item[0]
+                applyList.append({
+                    "userId": user_item.openid,
+                    "cardId": user_item.card_id,
+                    "cardPassword": user_item.card_password,
+                    "nickName": user_item.user_name,
+                    "userAvator": user_item.avatar_url
+                })
         arr.append({
             'id': item.activity_id,
             'activityTitle': item.activity_title,
@@ -130,14 +146,15 @@ def detail(request):
             'activityStartDate': item.activity_start_date,
             'activityEndDate': item.activity_end_date,
             'holder': item.holder,
-            'enterNums': item.enter_nums,
+            'enterNums': len(applyList),
             'readNums': item.read_nums,
             'isCollect': item.is_collect,
-            'publisher': item.publisher,
+            'publisher': item.holder,
             'activityPlace': item.activity_place,
             'status': item.status,
             'imageUrl': item.image_url,
             'isApply': isApply,
+            'applyList': applyList,
         })
         item.read_nums = int(item.read_nums) + 1
         item.save()
@@ -182,6 +199,18 @@ def userFavoriteList(request):
         )
         if item:
             item=item[0]
+            applyList = []
+            apply_list = Apply.objects.filter(content_id=item.activity_id)
+            for apply_item in apply_list:
+                user_item = User.objects.get(openid=apply_item.user_id)
+                applyList.append({
+                    "userId": user_item.openid,
+                    "cardId": user_item.card_id,
+                    "cardPassword": user_item.card_password,
+                    "nickName": user_item.user_name,
+                    "userAvator": user_item.avatar_url
+                })
+
             arr.append({
                 'id': item.activity_id,
                 'activityTitle': item.activity_title,
@@ -191,28 +220,33 @@ def userFavoriteList(request):
                 'activityStartDate': item.activity_start_date,
                 'activityEndDate': item.activity_end_date,
                 'holder': item.holder,
-                'enterNums': item.enter_nums,
+                'enterNums': len(applyList),
                 'readNums': item.read_nums,
                 'isCollect': item.is_collect,
                 'publisher': item.publisher,
                 'activityPlace': item.activity_place,
                 'imageUrl': item.image_url,
                 'status': item.status,
+                'applyList': applyList,
             })
     return success_response('成功', res);
 
 def apply(request):
     data_json = json.loads(request.body)
-    apply_item = Apply.objects.filter(activity_id=data_json.get('id'),user_id=data_json.get('userId'))
-    if apply_item:
-        apply_item.delete()
-    else:
+    user = User.objects.filter(
+        openid=data_json.get('userId')
+    )
+    if not user or not user[0].card_id:
+        return error_response('您未登陆认证，无法使用此功能')
+    if data_json.get('isApply') == 1 or data_json.get('isApply') == '1':
         apply_item = Apply.objects.create(
             content_id=data_json.get('id'),
             user_id=data_json.get('userId'),
         )
         apply_item.save();
-
+    else:
+        apply_item = Apply.objects.filter(content_id=data_json.get('id'), user_id=data_json.get('userId'))
+        apply_item.delete()
     return success_response('成功');
 
 def enterList(request):

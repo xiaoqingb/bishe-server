@@ -7,7 +7,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 
 from utils.util import success_response, error_response, unauth
 import json
-from user.models import UserFavorite
+from user.models import UserFavorite, lostAndFound, SchoolForum, ThumbUp
 
 
 def add(request):
